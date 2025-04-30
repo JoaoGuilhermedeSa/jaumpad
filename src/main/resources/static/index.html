@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+    <textarea id="noteArea" rows="10" cols="50"></textarea>
+
+    <script>
+        const socket = new SockJS('/ws');
+        const stompClient = Stomp.over(socket);
+
+        const noteId = 'WSWEEIUFAS'; // You can change this to any ID
+
+        stompClient.connect({}, function () {
+            console.log('Connected');
+
+            stompClient.subscribe(`/topic/notes/${noteId}`, function (message) {
+                const note = JSON.parse(message.body);
+                document.getElementById("noteArea").value = note.content;
+            });
+
+            document.getElementById("noteArea").addEventListener("input", function () {
+                const content = this.value;
+                stompClient.send(`/app/notes/${noteId}`, {}, JSON.stringify({ content }));
+            });
+        });
+    </script>
+</body>
+</html>
