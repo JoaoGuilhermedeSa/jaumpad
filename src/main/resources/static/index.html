@@ -1,33 +1,66 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>WebSocket Test</title>
-    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<title>JaumPad WebSocket Test</title>
+<script
+	src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script
+	src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 </head>
 <body>
-    <h1>WebSocket Test</h1>
-    <textarea id="noteArea" rows="10" cols="50"></textarea>
+	<h1>JaumPad</h1>
 
-    <script>
-        const socket = new SockJS('/ws');
-        const stompClient = Stomp.over(socket);
+	<label for="noteId">Enter Note ID:</label>
+	<input type="text" id="noteId" placeholder="e.g. WSWEEIUFAS">
+	<button onclick="connect()">Load Note</button>
 
-        const noteId = 'WSWEEIUFAS'; // You can change this to any ID
+	<br>
+	<br>
 
-        stompClient.connect({}, function () {
-            console.log('Connected');
+	<textarea id="noteArea" rows="15" cols="80" disabled></textarea>
 
-            stompClient.subscribe(`/topic/notes/${noteId}`, function (message) {
-                const note = JSON.parse(message.body);
-                document.getElementById("noteArea").value = note.content;
+	<script>
+        let stompClient;
+        let currentId = "";
+
+        function connect() {
+            currentId = document.getElementById("noteId").value.trim();
+            if (!currentId) {
+                alert("Please enter a Note ID.");
+                return;
+            }
+
+
+            fetch(`/api/notes/${currentId}`)
+                .then(res => res.json())
+                .then(note => {
+                    document.getElementById("noteArea").value = note.content;
+                    document.getElementById("noteArea").disabled = false;
+                });
+
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+
+            stompClient.connect({}, function () {
+                console.log('Connected via WebSocket');
+
+                // Unsubscribe previous if any
+                if (stompClient.subscriptions[`/topic/notes/${currentId}`]) {
+                    stompClient.unsubscribe(`/topic/notes/${currentId}`);
+                }
+
+                stompClient.subscribe(`/topic/notes/${noteId}`, function (message) {
+                    console.log("Raw message:", message.body);
+                    const note = JSON.parse(message.body);
+                    document.getElementById("noteArea").value = note.content;
+                });
+
+                document.getElementById("noteArea").addEventListener("input", function () {
+                    const content = this.value;
+                    stompClient.send(`/app/notes/${currentId}`, {}, content);
+                });
             });
-
-            document.getElementById("noteArea").addEventListener("input", function () {
-                const content = this.value;
-                stompClient.send(`/app/notes/${noteId}`, {}, JSON.stringify({ content }));
-            });
-        });
+        }
     </script>
 </body>
 </html>

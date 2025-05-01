@@ -18,7 +18,7 @@ public class NoteWebSocketController {
 		this.messagingTemplate = messagingTemplate;
 	}
 
-	@MessageMapping("/note.update.{noteId}")
+	@MessageMapping("/notes/{noteId}")
 	public void updateNote(@DestinationVariable String noteId, String content) {
 		noteService.update(noteId, content);
 

@@ -6,5 +6,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface NoteRepository extends JpaRepository<Note, String> {
+	
     List<Note> findByLastModifiedBefore(LocalDateTime cutoff);
 }
